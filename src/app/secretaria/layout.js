@@ -46,7 +46,7 @@ export default function SecretariaLayout({ children }) {
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       <Sidebar links={secretariaLinks} role="secretaria" />
       <main
-        className="min-h-screen transition-all duration-300"
+        className="main-content min-h-screen transition-all duration-300"
         style={{ marginLeft: 'var(--sidebar-width)', padding: '24px 32px' }}
       >
         {children}

@@ -43,7 +43,7 @@ export default function MedicoLayout({ children }) {
     <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       <Sidebar links={medicoLinks} role="medico" />
       <main
-        className="min-h-screen transition-all duration-300"
+        className="main-content min-h-screen transition-all duration-300"
         style={{ marginLeft: 'var(--sidebar-width)', padding: '24px 32px' }}
       >
         {children}
