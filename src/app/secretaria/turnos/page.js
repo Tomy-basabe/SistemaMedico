@@ -20,6 +20,7 @@ export default function TurnosPage() {
     obra_social_id: '', medico_id: '', fecha: '', hora: '', notas: '',
   });
   const [pacienteExistente, setPacienteExistente] = useState(null);
+  const [matchingPacientes, setMatchingPacientes] = useState([]);
   const [searchingDni, setSearchingDni] = useState(false);
   const supabase = createClient();
 
@@ -83,31 +84,33 @@ export default function TurnosPage() {
   }
 
   async function buscarPacientePorDni(dni) {
-    if (dni.length < 7) {
-      setPacienteExistente(null);
+    if (dni.length < 3) {
+      setMatchingPacientes([]);
       return;
     }
     setSearchingDni(true);
     const { data } = await supabase
       .from('pacientes')
       .select('*')
-      .eq('dni', dni)
-      .single();
+      .ilike('dni', `%${dni}%`)
+      .limit(5);
 
-    if (data) {
-      setPacienteExistente(data);
-      setForm((prev) => ({
-        ...prev,
-        nombre: data.nombre,
-        apellido: data.apellido,
-        telefono: data.telefono || '',
-        email: data.email || '',
-        obra_social_id: data.obra_social_id || '',
-      }));
-    } else {
-      setPacienteExistente(null);
-    }
+    setMatchingPacientes(data || []);
     setSearchingDni(false);
+  }
+
+  function seleccionarPaciente(paciente) {
+    setPacienteExistente(paciente);
+    setForm((prev) => ({
+      ...prev,
+      dni: paciente.dni,
+      nombre: paciente.nombre,
+      apellido: paciente.apellido,
+      telefono: paciente.telefono || '',
+      email: paciente.email || '',
+      obra_social_id: paciente.obra_social_id || '',
+    }));
+    setMatchingPacientes([]);
   }
 
   async function fetchSlots(medicoId, fecha) {
@@ -207,6 +210,7 @@ export default function TurnosPage() {
       obra_social_id: '', medico_id: '', fecha: '', hora: '', notas: '',
     });
     setPacienteExistente(null);
+    setMatchingPacientes([]);
     setSlotsDisponibles([]);
   }
 
@@ -394,6 +398,9 @@ export default function TurnosPage() {
                     value={form.dni}
                     onChange={(e) => {
                       setForm({ ...form, dni: e.target.value });
+                      if (pacienteExistente && pacienteExistente.dni !== e.target.value) {
+                        setPacienteExistente(null);
+                      }
                       buscarPacientePorDni(e.target.value);
                     }}
                     required
@@ -401,6 +408,20 @@ export default function TurnosPage() {
                   {searchingDni && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <div className="loader-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
+                    </div>
+                  )}
+                  {/* Dropdown de coincidencias */}
+                  {matchingPacientes.length > 0 && !pacienteExistente && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                      {matchingPacientes.map(p => (
+                        <div 
+                          key={p.id} 
+                          className="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer text-sm"
+                          onClick={() => seleccionarPaciente(p)}
+                        >
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">{p.dni}</span> — {p.nombre} {p.apellido}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
