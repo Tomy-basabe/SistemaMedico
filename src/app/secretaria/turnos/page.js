@@ -14,7 +14,7 @@ export default function TurnosPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [filterEspecialidad, setFilterEspecialidad] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
-  const [slotsDisponibles, setSlotsDisponibles] = useState([]);
+  const [diasDisponibles, setDiasDisponibles] = useState([]);
   const [form, setForm] = useState({
     dni: '', nombre: '', apellido: '', telefono: '', email: '',
     obra_social_id: '', medico_id: '', fecha: '', hora: '', notas: '',
@@ -113,51 +113,102 @@ export default function TurnosPage() {
     setMatchingPacientes([]);
   }
 
-  async function fetchSlots(medicoId, fecha) {
-    if (!medicoId || !fecha) return;
-    const dayOfWeek = new Date(fecha + 'T12:00:00').getDay();
-
-    const { data: disponibilidad } = await supabase
-      .from('disponibilidad')
-      .select('*')
-      .eq('medico_id', medicoId)
-      .eq('dia_semana', dayOfWeek)
-      .eq('activa', true)
-      .single();
-
-    if (!disponibilidad) {
-      setSlotsDisponibles([]);
+  async function fetchDisponibilidadMedico(medicoId) {
+    if (!medicoId) {
+      setDiasDisponibles([]);
       return;
     }
 
-    const { data: turnosExistentes } = await supabase
-      .from('turnos')
-      .select('hora')
+    // 1. Obtener disponibilidad semanal del médico
+    const { data: dispo } = await supabase
+      .from('disponibilidad')
+      .select('*')
       .eq('medico_id', medicoId)
-      .eq('fecha', fecha)
-      .neq('estado', 'cancelado');
+      .eq('activa', true);
 
-    const horasOcupadas = (turnosExistentes || []).map((t) => t.hora.slice(0, 5));
-
-    // Generate slots
-    const slots = [];
-    const [startH, startM] = disponibilidad.hora_inicio.split(':').map(Number);
-    const [endH, endM] = disponibilidad.hora_fin.split(':').map(Number);
-    const duration = disponibilidad.duracion_turno || 30;
-    let current = startH * 60 + startM;
-    const end = endH * 60 + endM;
-
-    while (current + duration <= end) {
-      const h = Math.floor(current / 60).toString().padStart(2, '0');
-      const m = (current % 60).toString().padStart(2, '0');
-      const slot = `${h}:${m}`;
-      if (!horasOcupadas.includes(slot)) {
-        slots.push(slot);
-      }
-      current += duration;
+    if (!dispo || dispo.length === 0) {
+      setDiasDisponibles([]);
+      return;
     }
 
-    setSlotsDisponibles(slots);
+    // 2. Generar próximos 14 días
+    const today = new Date();
+    const next14Days = [];
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      next14Days.push(d);
+    }
+
+    // 3. Filtrar días que el médico trabaja
+    const workDays = next14Days.filter(d => 
+      dispo.some(disp => disp.dia_semana === d.getDay())
+    );
+
+    if (workDays.length === 0) {
+      setDiasDisponibles([]);
+      return;
+    }
+
+    // 4. Traer turnos existentes en ese rango
+    const startDate = workDays[0].toISOString().split('T')[0];
+    const endDate = workDays[workDays.length - 1].toISOString().split('T')[0];
+
+    const { data: turnosExistentes } = await supabase
+      .from('turnos')
+      .select('fecha, hora')
+      .eq('medico_id', medicoId)
+      .gte('fecha', startDate)
+      .lte('fecha', endDate)
+      .neq('estado', 'cancelado');
+
+    // 5. Construir slots por día
+    const slotsList = [];
+
+    workDays.forEach(date => {
+      const dateStr = date.toISOString().split('T')[0];
+      const dayOfWeek = date.getDay();
+      const dailyDispo = dispo.find(d => d.dia_semana === dayOfWeek);
+      
+      const horasOcupadas = (turnosExistentes || [])
+        .filter(t => t.fecha === dateStr)
+        .map(t => t.hora.slice(0, 5));
+
+      const [startH, startM] = dailyDispo.hora_inicio.split(':').map(Number);
+      const [endH, endM] = dailyDispo.hora_fin.split(':').map(Number);
+      const duration = dailyDispo.duracion_turno || 30;
+      
+      let current = startH * 60 + startM;
+      const end = endH * 60 + endM;
+      const slots = [];
+
+      const isToday = dateStr === new Date().toISOString().split('T')[0];
+      const nowH = new Date().getHours();
+      const nowM = new Date().getMinutes();
+      const nowMinutes = nowH * 60 + nowM;
+
+      while (current + duration <= end) {
+        if (!isToday || current > nowMinutes) {
+          const h = Math.floor(current / 60).toString().padStart(2, '0');
+          const m = (current % 60).toString().padStart(2, '0');
+          const slot = `${h}:${m}`;
+          if (!horasOcupadas.includes(slot)) {
+            slots.push(slot);
+          }
+        }
+        current += duration;
+      }
+
+      if (slots.length > 0) {
+        slotsList.push({
+          dateStr,
+          dateObj: date,
+          slots
+        });
+      }
+    });
+
+    setDiasDisponibles(slotsList);
   }
 
   async function handleSubmit(e) {
@@ -185,6 +236,8 @@ export default function TurnosPage() {
       }
 
       // Crear turno
+      if (!form.fecha || !form.hora) throw new Error('Debe seleccionar una fecha y hora');
+      
       const { error: turnoError } = await supabase.from('turnos').insert({
         paciente_id: pacienteId,
         medico_id: form.medico_id,
@@ -211,7 +264,7 @@ export default function TurnosPage() {
     });
     setPacienteExistente(null);
     setMatchingPacientes([]);
-    setSlotsDisponibles([]);
+    setDiasDisponibles([]);
   }
 
   async function updateEstado(turnoId, estado) {
@@ -488,15 +541,16 @@ export default function TurnosPage() {
 
               <div style={{ height: '1px', background: 'var(--border-primary)', margin: '8px 0' }} />
 
-              {/* Médico y fecha */}
+              {/* Médico y Disponibilidad */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="input-label">Especialidad</label>
                   <select
                     className="select-field"
                     onChange={(e) => {
-                      setForm({ ...form, medico_id: '', hora: '' });
+                      setForm({ ...form, medico_id: '', hora: '', fecha: '' });
                       setFilterEspecialidad(e.target.value);
+                      setDiasDisponibles([]);
                     }}
                   >
                     <option value="">Todas</option>
@@ -511,8 +565,8 @@ export default function TurnosPage() {
                     className="select-field"
                     value={form.medico_id}
                     onChange={(e) => {
-                      setForm({ ...form, medico_id: e.target.value, hora: '' });
-                      fetchSlots(e.target.value, form.fecha);
+                      setForm({ ...form, medico_id: e.target.value, hora: '', fecha: '' });
+                      fetchDisponibilidadMedico(e.target.value);
                     }}
                     required
                   >
@@ -524,43 +578,53 @@ export default function TurnosPage() {
                     ))}
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="input-label">Fecha</label>
-                  <input
-                    type="date"
-                    className="input-field"
-                    value={form.fecha}
-                    onChange={(e) => {
-                      setForm({ ...form, fecha: e.target.value, hora: '' });
-                      fetchSlots(form.medico_id, e.target.value);
-                    }}
-                    min={new Date().toISOString().split('T')[0]}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="input-label">Horario disponible</label>
-                  {slotsDisponibles.length > 0 ? (
-                    <select
-                      className="select-field"
-                      value={form.hora}
-                      onChange={(e) => setForm({ ...form, hora: e.target.value })}
-                      required
-                    >
-                      <option value="">Seleccionar hora...</option>
-                      {slotsDisponibles.map((slot) => (
-                        <option key={slot} value={slot}>{slot} hs</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="input-field flex items-center" style={{ color: 'var(--text-muted)' }}>
-                      {form.medico_id && form.fecha ? 'Sin disponibilidad' : 'Seleccioná médico y fecha'}
+                {/* Disponibilidad Visual */}
+                {form.medico_id && diasDisponibles.length === 0 && (
+                  <div className="col-span-2 p-4 text-center text-sm rounded-xl border border-dashed" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-muted)' }}>
+                    El médico seleccionado no tiene horarios disponibles en los próximos 14 días.
+                  </div>
+                )}
+                
+                {form.medico_id && diasDisponibles.length > 0 && (
+                  <div className="col-span-2 mt-2">
+                    <label className="input-label mb-2 flex items-center justify-between">
+                      <span>Seleccionar Fecha y Hora</span>
+                      {form.fecha && form.hora && (
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md">
+                          Seleccionado: {new Date(form.fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })} a las {form.hora} hs
+                        </span>
+                      )}
+                    </label>
+                    <div className="flex gap-3 overflow-x-auto pb-4 scroll-smooth" style={{ scrollbarWidth: 'thin' }}>
+                      {diasDisponibles.map(dia => {
+                        const isSelectedDay = form.fecha === dia.dateStr;
+                        return (
+                          <div key={dia.dateStr} className={`flex-shrink-0 w-48 border rounded-xl overflow-hidden transition-all ${isSelectedDay ? 'border-emerald-500 shadow-md ring-1 ring-emerald-500' : 'border-slate-200 dark:border-slate-700'}`}>
+                            <div className={`text-center py-2 text-sm font-bold capitalize ${isSelectedDay ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-50 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300'}`}>
+                              {dia.dateObj.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: 'short' })}
+                            </div>
+                            <div className="p-2 grid grid-cols-2 gap-2 max-h-48 overflow-y-auto bg-white dark:bg-slate-900" style={{ scrollbarWidth: 'thin' }}>
+                              {dia.slots.map(slot => {
+                                const isSelectedSlot = form.fecha === dia.dateStr && form.hora === slot;
+                                return (
+                                  <button
+                                    key={slot}
+                                    type="button"
+                                    onClick={() => setForm({ ...form, fecha: dia.dateStr, hora: slot })}
+                                    className={`text-xs py-1.5 rounded-md font-mono transition-colors ${isSelectedSlot ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300'}`}
+                                  >
+                                    {slot}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               <div>

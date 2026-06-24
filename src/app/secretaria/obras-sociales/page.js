@@ -56,9 +56,18 @@ export default function ObrasSocialesPage() {
     }
   }
 
-  async function toggleActiva(id, activa) {
-    await supabase.from('obras_sociales').update({ activa }).eq('id', id);
-    fetchObrasSociales();
+  async function eliminarMutual(id, nombre) {
+    if (!window.confirm(`¿Estás seguro que deseas eliminar la mutual "${nombre}"? Esta acción no se puede deshacer y quedará registrada.`)) return;
+    
+    try {
+      const { error: err } = await supabase.from('obras_sociales').delete().eq('id', id);
+      if (err) throw err;
+      
+      setSuccess(`Obra social eliminada exitosamente`);
+      fetchObrasSociales();
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message);
+    }
   }
 
   return (
@@ -109,10 +118,11 @@ export default function ObrasSocialesPage() {
                     <td style={{ color: 'var(--text-muted)' }}>{new Date(os.created_at).toLocaleDateString('es-AR')}</td>
                     <td>
                       <button 
-                        onClick={() => toggleActiva(os.id, !os.activa)}
+                        onClick={() => eliminarMutual(os.id, os.nombre)}
                         className="btn-ghost text-xs"
+                        style={{ color: 'var(--danger)' }}
                       >
-                        {os.activa ? 'Desactivar' : 'Activar'}
+                        Eliminar
                       </button>
                     </td>
                   </tr>
