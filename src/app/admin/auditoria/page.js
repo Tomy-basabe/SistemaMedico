@@ -7,7 +7,7 @@ import { IconHistory, IconFilter } from '@/components/ui/Icons';
 export default function AuditoriaPage() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ tabla: '', accion: '', usuario: '', desde: '', hasta: '' });
+  const [filters, setFilters] = useState({ tabla: '', accion: '', usuario: '', desde: '', hasta: '', texto: '' });
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
   const pageSize = 25;
@@ -29,6 +29,7 @@ export default function AuditoriaPage() {
     if (filters.accion) query = query.eq('accion', filters.accion);
     if (filters.desde) query = query.gte('created_at', filters.desde + 'T00:00:00');
     if (filters.hasta) query = query.lte('created_at', filters.hasta + 'T23:59:59');
+    if (filters.texto) query = query.ilike('descripcion', `%${filters.texto}%`);
 
     const { data, count } = await query;
     setLogs(data || []);
@@ -49,6 +50,8 @@ export default function AuditoriaPage() {
     recetas: 'Recetas',
     disponibilidad: 'Disponibilidad',
     profiles: 'Usuarios',
+    obras_sociales: 'Mutuales',
+    medico_obras_sociales: 'Mutuales de Médico',
   };
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -67,6 +70,11 @@ export default function AuditoriaPage() {
           <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Filtros</span>
         </div>
         <div className="flex flex-wrap gap-4">
+          <div>
+            <label className="input-label">Buscar en descripción</label>
+            <input type="text" className="input-field" placeholder="Ej: OSEP, OSDE..." style={{ width: '200px' }} value={filters.texto}
+              onChange={(e) => { setFilters({ ...filters, texto: e.target.value }); setPage(0); }} />
+          </div>
           <div>
             <label className="input-label">Tabla</label>
             <select className="select-field" style={{ width: '160px' }} value={filters.tabla}
@@ -96,7 +104,7 @@ export default function AuditoriaPage() {
               onChange={(e) => { setFilters({ ...filters, hasta: e.target.value }); setPage(0); }} />
           </div>
           <div className="flex items-end">
-            <button className="btn-ghost text-sm" onClick={() => { setFilters({ tabla: '', accion: '', usuario: '', desde: '', hasta: '' }); setPage(0); }}>
+            <button className="btn-ghost text-sm" onClick={() => { setFilters({ tabla: '', accion: '', usuario: '', desde: '', hasta: '', texto: '' }); setPage(0); }}>
               Limpiar
             </button>
           </div>
