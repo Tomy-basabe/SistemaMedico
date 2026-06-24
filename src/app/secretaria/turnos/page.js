@@ -84,7 +84,7 @@ export default function TurnosPage() {
   }
 
   async function buscarPacientePorDni(dni) {
-    if (dni.length < 3) {
+    if (dni.length < 1) {
       setMatchingPacientes([]);
       return;
     }
@@ -442,9 +442,9 @@ export default function TurnosPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* DNI Búsqueda */}
               <div>
-                <label className="input-label flex justify-between">
+                <label className="input-label flex items-center justify-between w-full">
                   <span>DNI del Paciente</span>
-                  <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>Escribí para buscar uno existente</span>
+                  <span className="text-xs font-normal opacity-70">Escribí para buscar uno existente</span>
                 </label>
                 <div className="relative">
                   <input
