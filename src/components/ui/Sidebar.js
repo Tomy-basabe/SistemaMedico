@@ -88,7 +88,7 @@ export default function Sidebar({ links, role }) {
         <span
           className="text-xs font-medium px-2 py-1 rounded-full"
           style={{
-            background: 'rgba(59, 130, 246, 0.15)',
+            background: 'rgba(5, 150, 105, 0.15)',
             color: 'var(--accent-primary)',
           }}
         >
@@ -136,7 +136,7 @@ export default function Sidebar({ links, role }) {
               <span
                 className="text-xs font-medium px-2 py-0.5 rounded-full"
                 style={{
-                  background: 'rgba(59, 130, 246, 0.15)',
+                  background: 'rgba(5, 150, 105, 0.15)',
                   color: 'var(--accent-primary)',
                 }}
               >

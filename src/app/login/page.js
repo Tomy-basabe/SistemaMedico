@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { IconShield, IconMonitor, IconStethoscope } from '@/components/ui/Icons';
 
 export default function LoginPage() {
   const [step, setStep] = useState('role'); // 'role' → 'credentials'
@@ -19,22 +20,22 @@ export default function LoginPage() {
       value: 'admin',
       label: 'Administración',
       description: 'Panel de gestión y auditoría',
-      icon: '👑',
-      gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+      icon: <IconShield size={24} color="white" />,
+      gradient: 'linear-gradient(135deg, #0f172a, #334155)',
     },
     {
       value: 'secretaria',
       label: 'Secretaría',
       description: 'Gestión de turnos y pacientes',
-      icon: '🖥️',
-      gradient: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+      icon: <IconMonitor size={24} color="white" />,
+      gradient: 'linear-gradient(135deg, #0284c7, #0ea5e9)',
     },
     {
       value: 'medico',
       label: 'Médico',
       description: 'Consultas e historia clínica',
-      icon: '🩺',
-      gradient: 'linear-gradient(135deg, #10b981, #06b6d4)',
+      icon: <IconStethoscope size={24} color="white" />,
+      gradient: 'linear-gradient(135deg, #059669, #10b981)',
     },
   ];
 
@@ -241,16 +242,16 @@ export default function LoginPage() {
                       style={{
                         background:
                           selectedRole === 'admin'
-                            ? 'rgba(245, 158, 11, 0.15)'
+                            ? 'rgba(15, 23, 42, 0.1)'
                             : selectedRole === 'medico'
-                            ? 'rgba(16, 185, 129, 0.15)'
-                            : 'rgba(59, 130, 246, 0.15)',
+                            ? 'rgba(5, 150, 105, 0.15)'
+                            : 'rgba(2, 132, 199, 0.15)',
                         color:
                           selectedRole === 'admin'
-                            ? '#f59e0b'
+                            ? '#0f172a'
                             : selectedRole === 'medico'
-                            ? '#10b981'
-                            : '#3b82f6',
+                            ? '#059669'
+                            : '#0284c7',
                       }}
                     >
                       {selectedRole === 'admin'
