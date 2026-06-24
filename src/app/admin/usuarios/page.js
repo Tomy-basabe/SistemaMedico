@@ -3,9 +3,6 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { IconPlus, IconUser, IconX } from '@/components/ui/Icons';
-import { ESPECIALIDADES } from '@/lib/utils';
-
-export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -19,14 +16,23 @@ export default function UsuariosPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchUsuarios();
+    fetchData();
   }, []);
 
-  async function fetchUsuarios() {
+  async function fetchData() {
     setLoading(true);
+    const [usuariosRes, especialidadesRes] = await Promise.all([
+      supabase.from('profiles').select('*').order('rol').order('apellido'),
+      supabase.from('especialidades').select('*').eq('activa', true).order('nombre')
+    ]);
+    setUsuarios(usuariosRes.data || []);
+    setEspecialidades(especialidadesRes.data || []);
+    setLoading(false);
+  }
+
+  async function fetchUsuarios() {
     const { data } = await supabase.from('profiles').select('*').order('rol').order('apellido');
     setUsuarios(data || []);
-    setLoading(false);
   }
 
   async function handleCreateUser(e) {
@@ -177,7 +183,7 @@ export default function UsuariosPage() {
                     <label className="input-label">Especialidad</label>
                     <select className="select-field" value={form.especialidad} onChange={(e) => setForm({ ...form, especialidad: e.target.value })} required>
                       <option value="">Seleccionar...</option>
-                      {ESPECIALIDADES.map((e) => <option key={e} value={e}>{e}</option>)}
+                      {especialidades.map((e) => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
                     </select>
                   </div>
                   <div>

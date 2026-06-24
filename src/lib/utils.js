@@ -62,10 +62,7 @@ export const ESTADO_CONFIG = {
   },
 };
 
-/**
- * Lista de especialidades disponibles
- */
-export const ESPECIALIDADES = ['Cardiólogo', 'Pediatra', 'Clínico', 'Ecografista'];
+
 
 /**
  * Días de la semana

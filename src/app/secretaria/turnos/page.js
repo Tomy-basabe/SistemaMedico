@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { ESTADO_CONFIG, formatTime, generateWhatsAppLink, ESPECIALIDADES } from '@/lib/utils';
+import { ESTADO_CONFIG, formatTime, generateWhatsAppLink } from '@/lib/utils';
 
 export default function TurnosPage() {
   const [turnos, setTurnos] = useState([]);
   const [medicos, setMedicos] = useState([]);
   const [obrasSociales, setObrasSociales] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -21,6 +22,15 @@ export default function TurnosPage() {
   const [pacienteExistente, setPacienteExistente] = useState(null);
   const [searchingDni, setSearchingDni] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    fetchEspecialidades();
+  }, []);
+
+  async function fetchEspecialidades() {
+    const { data } = await supabase.from('especialidades').select('*').eq('activa', true).order('nombre');
+    setEspecialidades(data || []);
+  }
 
   useEffect(() => {
     fetchTurnos();
@@ -252,8 +262,8 @@ export default function TurnosPage() {
               style={{ width: '180px' }}
             >
               <option value="">Todas</option>
-              {ESPECIALIDADES.map((e) => (
-                <option key={e} value={e}>{e}</option>
+              {especialidades.map((e) => (
+                <option key={e.id} value={e.nombre}>{e.nombre}</option>
               ))}
             </select>
           </div>
@@ -469,8 +479,8 @@ export default function TurnosPage() {
                     }}
                   >
                     <option value="">Todas</option>
-                    {ESPECIALIDADES.map((esp) => (
-                      <option key={esp} value={esp}>{esp}</option>
+                    {especialidades.map((esp) => (
+                      <option key={esp.id} value={esp.nombre}>{esp.nombre}</option>
                     ))}
                   </select>
                 </div>
