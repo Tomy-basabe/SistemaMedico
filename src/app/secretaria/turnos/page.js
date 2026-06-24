@@ -113,20 +113,28 @@ export default function TurnosPage() {
     setMatchingPacientes([]);
   }
 
-  async function fetchDisponibilidadMedico(medicoId) {
-    if (!medicoId) {
+  async function fetchDisponibilidadEspecialidad(especialidadNombre) {
+    if (!especialidadNombre) {
       setDiasDisponibles([]);
       return;
     }
 
-    // 1. Obtener disponibilidad semanal del médico
-    const { data: dispo } = await supabase
+    const medicosEsp = medicos.filter(m => m.especialidad === especialidadNombre);
+    if (medicosEsp.length === 0) {
+      setDiasDisponibles([]);
+      return;
+    }
+
+    const medicosIds = medicosEsp.map(m => m.id);
+
+    // 1. Obtener disponibilidad semanal de todos los médicos de la especialidad
+    const { data: dispoAll } = await supabase
       .from('disponibilidad')
       .select('*')
-      .eq('medico_id', medicoId)
+      .in('medico_id', medicosIds)
       .eq('activa', true);
 
-    if (!dispo || dispo.length === 0) {
+    if (!dispoAll || dispoAll.length === 0) {
       setDiasDisponibles([]);
       return;
     }
@@ -140,9 +148,9 @@ export default function TurnosPage() {
       next14Days.push(d);
     }
 
-    // 3. Filtrar días que el médico trabaja
+    // 3. Filtrar días donde algún médico trabaje
     const workDays = next14Days.filter(d => 
-      dispo.some(disp => disp.dia_semana === d.getDay())
+      dispoAll.some(disp => disp.dia_semana === d.getDay())
     );
 
     if (workDays.length === 0) {
@@ -150,60 +158,73 @@ export default function TurnosPage() {
       return;
     }
 
-    // 4. Traer turnos existentes en ese rango
+    // 4. Traer turnos existentes
     const startDate = workDays[0].toISOString().split('T')[0];
     const endDate = workDays[workDays.length - 1].toISOString().split('T')[0];
 
     const { data: turnosExistentes } = await supabase
       .from('turnos')
-      .select('fecha, hora')
-      .eq('medico_id', medicoId)
+      .select('fecha, hora, medico_id')
+      .in('medico_id', medicosIds)
       .gte('fecha', startDate)
       .lte('fecha', endDate)
       .neq('estado', 'cancelado');
 
-    // 5. Construir slots por día
+    // 5. Construir slots unificados por día
     const slotsList = [];
 
     workDays.forEach(date => {
       const dateStr = date.toISOString().split('T')[0];
       const dayOfWeek = date.getDay();
-      const dailyDispo = dispo.find(d => d.dia_semana === dayOfWeek);
       
-      const horasOcupadas = (turnosExistentes || [])
-        .filter(t => t.fecha === dateStr)
-        .map(t => t.hora.slice(0, 5));
-
-      const [startH, startM] = dailyDispo.hora_inicio.split(':').map(Number);
-      const [endH, endM] = dailyDispo.hora_fin.split(':').map(Number);
-      const duration = dailyDispo.duracion_turno || 30;
-      
-      let current = startH * 60 + startM;
-      const end = endH * 60 + endM;
-      const slots = [];
-
       const isToday = dateStr === new Date().toISOString().split('T')[0];
       const nowH = new Date().getHours();
       const nowM = new Date().getMinutes();
       const nowMinutes = nowH * 60 + nowM;
 
-      while (current + duration <= end) {
-        if (!isToday || current > nowMinutes) {
-          const h = Math.floor(current / 60).toString().padStart(2, '0');
-          const m = (current % 60).toString().padStart(2, '0');
-          const slot = `${h}:${m}`;
-          if (!horasOcupadas.includes(slot)) {
-            slots.push(slot);
-          }
-        }
-        current += duration;
-      }
+      const slotsForDay = new Map();
 
-      if (slots.length > 0) {
+      medicosEsp.forEach(medico => {
+        const dailyDispo = dispoAll.find(d => d.medico_id === medico.id && d.dia_semana === dayOfWeek);
+        if (!dailyDispo) return;
+
+        const horasOcupadas = (turnosExistentes || [])
+          .filter(t => t.fecha === dateStr && t.medico_id === medico.id)
+          .map(t => t.hora.slice(0, 5));
+
+        const [startH, startM] = dailyDispo.hora_inicio.split(':').map(Number);
+        const [endH, endM] = dailyDispo.hora_fin.split(':').map(Number);
+        const duration = dailyDispo.duracion_turno || 30;
+        
+        let current = startH * 60 + startM;
+        const end = endH * 60 + endM;
+
+        while (current + duration <= end) {
+          if (!isToday || current > nowMinutes) {
+            const h = Math.floor(current / 60).toString().padStart(2, '0');
+            const m = (current % 60).toString().padStart(2, '0');
+            const slotTime = `${h}:${m}`;
+            
+            if (!horasOcupadas.includes(slotTime)) {
+              if (!slotsForDay.has(slotTime)) {
+                slotsForDay.set(slotTime, {
+                  hora: slotTime,
+                  medico_id: medico.id,
+                  medico_nombre: `Dr/a. ${medico.nombre} ${medico.apellido}`
+                });
+              }
+            }
+          }
+          current += duration;
+        }
+      });
+
+      if (slotsForDay.size > 0) {
+        const sortedSlots = Array.from(slotsForDay.values()).sort((a, b) => a.hora.localeCompare(b.hora));
         slotsList.push({
           dateStr,
           dateObj: date,
-          slots
+          slots: sortedSlots
         });
       }
     });
@@ -272,9 +293,10 @@ export default function TurnosPage() {
     fetchTurnos();
   }
 
-  const medicosFiltrados = filterEspecialidad
-    ? medicos.filter((m) => m.especialidad === filterEspecialidad)
-    : medicos;
+  // Ya no filtramos los médicos para mostrarlos, pero si se necesita en otro lado, se mantiene.
+  // const medicosFiltrados = filterEspecialidad
+  //   ? medicos.filter((m) => m.especialidad === filterEspecialidad)
+  //   : medicos;
 
   return (
     <div style={{ animation: 'fadeIn 0.4s ease' }}>
@@ -545,8 +567,8 @@ export default function TurnosPage() {
 
               <div style={{ height: '1px', background: 'var(--border-primary)', margin: '8px 0' }} />
 
-              {/* Médico y Disponibilidad */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Especialidad y Disponibilidad */}
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="input-label">Especialidad</label>
                   <select
@@ -554,58 +576,40 @@ export default function TurnosPage() {
                     onChange={(e) => {
                       setForm({ ...form, medico_id: '', hora: '', fecha: '' });
                       setFilterEspecialidad(e.target.value);
-                      setDiasDisponibles([]);
+                      fetchDisponibilidadEspecialidad(e.target.value);
                     }}
                   >
-                    <option value="">Todas</option>
+                    <option value="">Seleccionar especialidad...</option>
                     {especialidades.map((esp) => (
                       <option key={esp.id} value={esp.nombre}>{esp.nombre}</option>
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="input-label">Médico</label>
-                  <select
-                    className="select-field"
-                    value={form.medico_id}
-                    onChange={(e) => {
-                      setForm({ ...form, medico_id: e.target.value, hora: '', fecha: '' });
-                      fetchDisponibilidadMedico(e.target.value);
-                    }}
-                    required
-                  >
-                    <option value="">Seleccionar médico...</option>
-                    {medicosFiltrados.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        Dr/a. {m.nombre} {m.apellido} — {m.especialidad}
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
                 {/* Disponibilidad Visual */}
-                {!form.medico_id && (
-                  <div className="col-span-2 mt-2 border-2 border-dashed rounded-xl p-6 text-center" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                {!filterEspecialidad && (
+                  <div className="mt-2 border-2 border-dashed rounded-xl p-6 text-center" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
                     <div className="text-2xl mb-2">📅</div>
                     <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Disponibilidad Horaria</p>
-                    <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Seleccioná un médico para ver sus próximos días y horarios disponibles.</p>
+                    <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Seleccioná una especialidad para ver los horarios disponibles de todos sus médicos.</p>
                   </div>
                 )}
                 
-                {form.medico_id && diasDisponibles.length === 0 && (
-                  <div className="col-span-2 p-4 text-center text-sm rounded-xl border border-dashed" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-muted)' }}>
-                    El médico seleccionado no tiene horarios disponibles en los próximos 14 días.
+                {filterEspecialidad && diasDisponibles.length === 0 && (
+                  <div className="p-4 text-center text-sm rounded-xl border border-dashed" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-muted)' }}>
+                    No hay horarios disponibles en los próximos 14 días para esta especialidad.
                   </div>
                 )}
                 
-                {form.medico_id && diasDisponibles.length > 0 && (
-                  <div className="col-span-2 mt-2">
-                    <label className="input-label mb-2 flex items-center justify-between">
+                {filterEspecialidad && diasDisponibles.length > 0 && (
+                  <div className="mt-2">
+                    <label className="input-label mb-2 flex flex-col md:flex-row md:items-center justify-between gap-2">
                       <span>Seleccionar Fecha y Hora</span>
-                      {form.fecha && form.hora && (
-                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md">
-                          Seleccionado: {new Date(form.fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })} a las {form.hora} hs
-                        </span>
+                      {form.fecha && form.hora && form.medico_id && (
+                        <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-md border border-emerald-100 dark:border-emerald-800">
+                          <div><span className="font-bold">Asignado:</span> {medicos.find(m => m.id === form.medico_id)?.nombre} {medicos.find(m => m.id === form.medico_id)?.apellido}</div>
+                          <div>{new Date(form.fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })} a las {form.hora} hs</div>
+                        </div>
                       )}
                     </label>
                     <div className="flex gap-3 overflow-x-auto pb-4 scroll-smooth" style={{ scrollbarWidth: 'thin' }}>
@@ -618,15 +622,16 @@ export default function TurnosPage() {
                             </div>
                             <div className="p-2 grid grid-cols-2 gap-2 max-h-48 overflow-y-auto bg-white dark:bg-slate-900" style={{ scrollbarWidth: 'thin' }}>
                               {dia.slots.map(slot => {
-                                const isSelectedSlot = form.fecha === dia.dateStr && form.hora === slot;
+                                const isSelectedSlot = form.fecha === dia.dateStr && form.hora === slot.hora && form.medico_id === slot.medico_id;
                                 return (
                                   <button
-                                    key={slot}
+                                    key={`${slot.hora}-${slot.medico_id}`}
                                     type="button"
-                                    onClick={() => setForm({ ...form, fecha: dia.dateStr, hora: slot })}
+                                    onClick={() => setForm({ ...form, fecha: dia.dateStr, hora: slot.hora, medico_id: slot.medico_id })}
                                     className={`text-xs py-1.5 rounded-md font-mono transition-colors ${isSelectedSlot ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300'}`}
+                                    title={`Asignar a: ${slot.medico_nombre}`}
                                   >
-                                    {slot}
+                                    {slot.hora}
                                   </button>
                                 )
                               })}
