@@ -215,7 +215,8 @@ export default function LoginPage() {
                     setEmail('');
                     setPassword('');
                   }}
-                  className="btn-ghost p-2"
+                  className="btn-ghost p-2 flex items-center gap-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  title="Volver atrás"
                 >
                   <svg
                     width="20"
@@ -227,6 +228,7 @@ export default function LoginPage() {
                   >
                     <polyline points="15 18 9 12 15 6" />
                   </svg>
+                  <span className="text-sm font-medium">Volver</span>
                 </button>
                 <div>
                   <h2
