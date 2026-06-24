@@ -468,14 +468,15 @@ export default function TurnosPage() {
                   )}
                   {/* Dropdown de coincidencias */}
                   {matchingPacientes.length > 0 && !pacienteExistente && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-1 border rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-primary)' }}>
                       {matchingPacientes.map(p => (
                         <div 
                           key={p.id} 
-                          className="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer text-sm"
+                          className="px-4 py-2 cursor-pointer text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          style={{ color: 'var(--text-primary)' }}
                           onClick={() => seleccionarPaciente(p)}
                         >
-                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">{p.dni}</span> — {p.nombre} {p.apellido}
+                          <span className="font-semibold" style={{ color: 'var(--accent-primary)' }}>{p.dni}</span> <span style={{ color: 'var(--text-secondary)' }}>—</span> {p.nombre} {p.apellido}
                         </div>
                       ))}
                     </div>
