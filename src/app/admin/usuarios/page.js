@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { IconPlus, IconUser, IconX } from '@/components/ui/Icons';
+
+export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [creating, setCreating] = useState(false);
