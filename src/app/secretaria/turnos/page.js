@@ -442,7 +442,10 @@ export default function TurnosPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* DNI Búsqueda */}
               <div>
-                <label className="input-label">DNI del Paciente</label>
+                <label className="input-label flex justify-between">
+                  <span>DNI del Paciente</span>
+                  <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>Escribí para buscar uno existente</span>
+                </label>
                 <div className="relative">
                   <input
                     type="text"
@@ -580,6 +583,14 @@ export default function TurnosPage() {
                 </div>
 
                 {/* Disponibilidad Visual */}
+                {!form.medico_id && (
+                  <div className="col-span-2 mt-2 border-2 border-dashed rounded-xl p-6 text-center" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                    <div className="text-2xl mb-2">📅</div>
+                    <p className="font-medium" style={{ color: 'var(--text-primary)' }}>Disponibilidad Horaria</p>
+                    <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Seleccioná un médico para ver sus próximos días y horarios disponibles.</p>
+                  </div>
+                )}
+                
                 {form.medico_id && diasDisponibles.length === 0 && (
                   <div className="col-span-2 p-4 text-center text-sm rounded-xl border border-dashed" style={{ borderColor: 'var(--border-primary)', color: 'var(--text-muted)' }}>
                     El médico seleccionado no tiene horarios disponibles en los próximos 14 días.
