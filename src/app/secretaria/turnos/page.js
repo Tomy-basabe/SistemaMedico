@@ -24,7 +24,7 @@ export default function TurnosPage() {
 
   const [form, setForm] = useState({
     dni: '', nombre: '', apellido: '', telefono: '', email: '',
-    obra_social_id: '', medico_id: '', fecha: '', hora: '', notas: '',
+    obra_social_id: '', numero_afiliado: '', medico_id: '', fecha: '', hora: '', notas: '',
   });
   const [pacienteExistente, setPacienteExistente] = useState(null);
   const [matchingPacientes, setMatchingPacientes] = useState([]);
@@ -116,6 +116,7 @@ export default function TurnosPage() {
       telefono: paciente.telefono || '',
       email: paciente.email || '',
       obra_social_id: paciente.obra_social_id || '',
+      numero_afiliado: paciente.numero_afiliado || '',
     }));
     setMatchingPacientes([]);
   }
@@ -256,6 +257,10 @@ export default function TurnosPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     try {
+      if (form.obra_social_id && !form.numero_afiliado) {
+        throw new Error('Debe ingresar el número de afiliado para la obra social seleccionada.');
+      }
+
       let pacienteId = pacienteExistente?.id;
 
       if (!pacienteId) {
@@ -268,6 +273,7 @@ export default function TurnosPage() {
             telefono: form.telefono || null,
             email: form.email || null,
             obra_social_id: form.obra_social_id || null,
+            numero_afiliado: form.obra_social_id ? form.numero_afiliado : null,
           })
           .select()
           .single();
@@ -300,7 +306,7 @@ export default function TurnosPage() {
   function resetForm() {
     setForm({
       dni: '', nombre: '', apellido: '', telefono: '', email: '',
-      obra_social_id: '', medico_id: '', fecha: '', hora: '', notas: '',
+      obra_social_id: '', numero_afiliado: '', medico_id: '', fecha: '', hora: '', notas: '',
     });
     setPacienteExistente(null);
     setMatchingPacientes([]);
@@ -556,6 +562,21 @@ export default function TurnosPage() {
                       <option key={os.id} value={os.id}>{os.nombre}</option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="input-label">Nº Afiliado {form.obra_social_id && '*'}</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={form.numero_afiliado} 
+                    onChange={(e) => setForm({ ...form, numero_afiliado: e.target.value })} 
+                    required={!!form.obra_social_id}
+                    disabled={!!pacienteExistente || !form.obra_social_id}
+                    placeholder={form.obra_social_id ? "Número de afiliado..." : "Solo para obra social"}
+                  />
                 </div>
               </div>
 

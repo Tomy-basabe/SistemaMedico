@@ -42,9 +42,13 @@ export default function PacientesPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     try {
+      if (form.obra_social_id && !form.numero_afiliado) {
+        throw new Error('Debe ingresar el número de afiliado para la obra social seleccionada.');
+      }
       const { error } = await supabase.from('pacientes').insert({
         ...form,
         obra_social_id: form.obra_social_id || null,
+        numero_afiliado: form.obra_social_id ? form.numero_afiliado : null,
         fecha_nacimiento: form.fecha_nacimiento || null,
       });
       if (error) throw error;
@@ -186,8 +190,16 @@ export default function PacientesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="input-label">Nº Afiliado</label>
-                  <input type="text" className="input-field" value={form.numero_afiliado} onChange={(e) => setForm({ ...form, numero_afiliado: e.target.value })} />
+                  <label className="input-label">Nº Afiliado {form.obra_social_id && '*'}</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={form.numero_afiliado} 
+                    onChange={(e) => setForm({ ...form, numero_afiliado: e.target.value })} 
+                    required={!!form.obra_social_id}
+                    disabled={!form.obra_social_id}
+                    placeholder={form.obra_social_id ? "Número de afiliado..." : "Solo para obra social"}
+                  />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
