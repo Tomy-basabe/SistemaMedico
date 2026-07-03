@@ -232,19 +232,43 @@ export default function DisponibilidadPage() {
                             />
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Turnos de</label>
-                            <select 
-                              className="select-field !py-1.5 !px-3 !w-auto !bg-transparent"
-                              value={b.duracion_turno}
-                              onChange={(e) => updateBlock(dia, b.id, 'duracion_turno', parseInt(e.target.value))}
-                            >
-                              <option value={15}>15 min</option>
-                              <option value={20}>20 min</option>
-                              <option value={30}>30 min</option>
-                              <option value={45}>45 min</option>
-                              <option value={60}>60 min</option>
-                            </select>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {[15, 20, 30, 45, 60].map((min) => (
+                                <button
+                                  key={min}
+                                  type="button"
+                                  onClick={() => updateBlock(dia, b.id, 'duracion_turno', min)}
+                                  className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150"
+                                  style={{
+                                    background: b.duracion_turno === min ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                                    color: b.duracion_turno === min ? 'white' : 'var(--text-secondary)',
+                                    border: `1px solid ${b.duracion_turno === min ? 'var(--accent-primary)' : 'var(--border-primary)'}`,
+                                  }}
+                                >
+                                  {min}m
+                                </button>
+                              ))}
+                              <div className="flex items-center gap-1 ml-1">
+                                <input
+                                  type="number"
+                                  min={5}
+                                  max={120}
+                                  step={5}
+                                  value={b.duracion_turno}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val) && val >= 5 && val <= 120) {
+                                      updateBlock(dia, b.id, 'duracion_turno', val);
+                                    }
+                                  }}
+                                  className="input-field !py-1 !px-2 !w-16 text-center !bg-transparent text-sm"
+                                  title="Escribí los minutos manualmente"
+                                />
+                                <span className="text-xs text-slate-500">min</span>
+                              </div>
+                            </div>
                           </div>
 
                           <div className="flex-1 flex justify-end">
