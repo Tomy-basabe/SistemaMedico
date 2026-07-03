@@ -115,26 +115,16 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo & Title */}
-        <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-            style={{ background: 'var(--accent-gradient)' }}
-          >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
+        <div className="text-center mb-6">
+          <div className="flex justify-center mb-4">
+            <img
+              src="/logo.png"
+              alt="CAB Laboratorio de Análisis Clínicos"
+              className="h-28 w-auto object-contain bg-white p-2 rounded-2xl shadow-sm"
+            />
           </div>
-          <h1 className="text-3xl font-bold gradient-text mb-2">MediCenter</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Sistema de Gestión Médica</p>
+          <h1 className="text-2xl font-bold gradient-text mb-1">CAB</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>Laboratorio de Análisis Clínicos</p>
         </div>
 
         {/* Card */}
