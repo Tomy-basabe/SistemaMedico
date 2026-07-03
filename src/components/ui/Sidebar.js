@@ -151,6 +151,29 @@ export default function Sidebar({ links, role }) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {profile?.rol === 'admin' && role !== 'admin' && (
+            <div className="mb-2 pb-2" style={{ borderBottom: '1px solid var(--border-primary)' }}>
+              <Link
+                href="/admin"
+                className="sidebar-link transition-colors"
+                style={{ color: '#f59e0b' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <span className="flex-shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                  </svg>
+                </span>
+                <span className="font-semibold">Volver a Admin</span>
+              </Link>
+            </div>
+          )}
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (
