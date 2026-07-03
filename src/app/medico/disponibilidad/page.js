@@ -190,18 +190,19 @@ export default function DisponibilidadPage() {
               const hasBlocks = blocks.length > 0;
               
               return (
-                <div key={dia} className="p-6 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <div key={dia} className="p-6 transition-colors" style={{ borderBottom: '1px solid var(--border-primary)' }} onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'} onMouseLeave={e=>e.currentTarget.style.background=''}>
                   <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                     {/* Day Header */}
                     <div className="w-48 flex-shrink-0">
                       <h3 className="font-bold flex items-center gap-3 text-lg" style={{ color: hasBlocks ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
-                        <div className={`w-3 h-3 rounded-full ${hasBlocks ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                        <div className="w-3 h-3 rounded-full" style={{ background: hasBlocks ? 'var(--accent-primary)' : '#cbd5e1' }} />
                         {DIAS_SEMANA[dia]}
                       </h3>
                       {hasBlocks && (
                         <button 
                           onClick={() => copyToWeekdays(dia)}
-                          className="text-xs font-medium mt-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                          className="text-xs font-medium mt-2 transition-colors"
+                          style={{ color: 'var(--accent-primary)' }}
                         >
                           Copiar a Lun-Vie
                         </button>
@@ -211,7 +212,7 @@ export default function DisponibilidadPage() {
                     {/* Time Blocks */}
                     <div className="flex-1 space-y-3">
                       {blocks.map((b) => (
-                        <div key={b.id} className="flex flex-wrap items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div key={b.id} className="flex flex-wrap items-center gap-4 p-4 rounded-xl shadow-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-primary)' }}>
                           <div className="flex items-center gap-2">
                             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">De</label>
                             <input 
@@ -274,7 +275,7 @@ export default function DisponibilidadPage() {
                           <div className="flex-1 flex justify-end">
                             <button 
                               onClick={() => removeBlock(dia, b.id)}
-                              className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
                               title="Eliminar este horario"
                             >
                               <IconX size={18} />
@@ -286,7 +287,7 @@ export default function DisponibilidadPage() {
                       <div>
                         <button 
                           onClick={() => addBlock(dia)}
-                          className="inline-flex items-center gap-1.5 text-sm font-medium py-1.5 px-3 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 transition-colors"
+                          className="inline-flex items-center gap-1.5 text-sm font-medium py-1.5 px-3 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
                         >
                           <IconPlus size={16} /> Agregar Horario
                         </button>
@@ -301,7 +302,7 @@ export default function DisponibilidadPage() {
       </div>
       
       {/* Fixed Save Bar at bottom for convenience */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 border-t border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-40 flex justify-end" style={{ paddingLeft: 'calc(var(--sidebar-width) + 1rem)' }}>
+      <div className="fixed bottom-0 left-0 right-0 p-4 backdrop-blur-md z-40 flex justify-end" style={{ paddingLeft: 'calc(var(--sidebar-width) + 1rem)', borderTop: '1px solid var(--border-primary)', background: 'rgba(255,255,255,0.9)' }}>
         <button 
           onClick={handleSave} 
           disabled={saving || loading}
