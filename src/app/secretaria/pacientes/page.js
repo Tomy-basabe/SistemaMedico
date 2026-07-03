@@ -42,7 +42,10 @@ export default function PacientesPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      if (form.obra_social_id && !form.numero_afiliado) {
+      if (!form.dni || form.dni.trim() === '') {
+        throw new Error('El DNI es obligatorio.');
+      }
+      if (form.obra_social_id && (!form.numero_afiliado || form.numero_afiliado.trim() === '')) {
         throw new Error('Debe ingresar el número de afiliado para la obra social seleccionada.');
       }
       const { error } = await supabase.from('pacientes').insert({

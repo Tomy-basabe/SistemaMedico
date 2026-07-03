@@ -257,7 +257,10 @@ export default function TurnosPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      if (form.obra_social_id && !form.numero_afiliado) {
+      if (!form.dni || form.dni.trim() === '') {
+        throw new Error('El DNI del paciente es obligatorio.');
+      }
+      if (form.obra_social_id && (!form.numero_afiliado || form.numero_afiliado.trim() === '')) {
         throw new Error('Debe ingresar el número de afiliado para la obra social seleccionada.');
       }
 
