@@ -75,14 +75,13 @@ export default function Sidebar({ links, role }) {
           </svg>
         </button>
         <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
-            style={{ background: config.gradient }}
-          >
-            {config.icon}
-          </div>
+          <img
+            src="/logo.png"
+            alt="CAB Laboratorio"
+            className="h-8 w-auto object-contain bg-white rounded-md p-1"
+          />
           <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-            MediCenter
+            CAB
           </span>
         </div>
         <span
@@ -123,15 +122,14 @@ export default function Sidebar({ links, role }) {
         {/* Header */}
         <div className="p-6 pb-4">
           <div className="flex items-center gap-3 mb-1">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
-              style={{ background: config.gradient }}
-            >
-              {config.icon}
-            </div>
+          <img
+            src="/logo.png"
+            alt="CAB Laboratorio"
+            className="h-10 w-auto object-contain bg-white rounded-lg p-1 shadow-sm"
+          />
             <div>
               <h2 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
-                MediCenter
+                CAB
               </h2>
               <span
                 className="text-xs font-medium px-2 py-0.5 rounded-full"
