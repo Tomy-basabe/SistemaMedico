@@ -64,16 +64,18 @@ export default function LoginPage() {
         throw new Error('No se encontró el perfil del usuario.');
       }
 
-      // Admin puede entrar a cualquier módulo; otros deben coincidir
-      if (profile.rol !== 'admin' && profile.rol !== selectedRole) {
+      // Superadmin y Admin pueden entrar; otros deben coincidir
+      if (profile.rol !== 'superadmin' && profile.rol !== 'admin' && profile.rol !== selectedRole) {
         await supabase.auth.signOut();
         throw new Error(
           `Tu cuenta no tiene acceso al módulo de ${selectedRole === 'medico' ? 'Médico' : 'Secretaría'}. Contactá al administrador.`
         );
       }
 
-      // Redirigir según el rol seleccionado (admin tiene su propio panel)
-      if (profile.rol === 'admin') {
+      // Redirigir según el rol seleccionado (superadmin y admin tienen su propio panel)
+      if (profile.rol === 'superadmin') {
+        router.push('/superadmin');
+      } else if (profile.rol === 'admin') {
         if (selectedRole === 'admin') {
           router.push('/admin');
         } else {
