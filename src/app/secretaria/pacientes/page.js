@@ -66,13 +66,11 @@ export default function PacientesPage() {
     setLoading(false);
   }
 
-  async function fetchObrasSociales(currentDomain) {
-    if (!currentDomain) return;
+  async function fetchObrasSociales() {
     const { data } = await supabase
       .from('obras_sociales')
       .select('*')
       .eq('activa', true)
-      .eq('domain', currentDomain)
       .order('nombre');
     setObrasSociales(data || []);
   }

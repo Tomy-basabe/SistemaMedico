@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { IconCheck } from '@/components/ui/Icons';
 
+import { toggleMutualServer } from '@/app/actions/mutuales';
+
 export default function MisMutualesPage() {
   const { profile } = useAuth();
   const [obrasSociales, setObrasSociales] = useState([]);
@@ -47,33 +49,21 @@ export default function MisMutualesPage() {
     setSaving(obraSocialId);
     
     try {
-      if (actualmenteAceptada) {
-        // Dejar de aceptar
-        await supabase
-          .from('medico_obras_sociales')
-          .delete()
-          .match({ medico_id: profile.id, obra_social_id: obraSocialId });
-          
-        setMisMutuales(prev => {
-          const next = new Set(prev);
+      const result = await toggleMutualServer(profile.id, obraSocialId, actualmenteAceptada);
+      if (!result.success) throw new Error(result.error);
+      
+      setMisMutuales(prev => {
+        const next = new Set(prev);
+        if (actualmenteAceptada) {
           next.delete(obraSocialId);
-          return next;
-        });
-      } else {
-        // Empezar a aceptar
-        await supabase
-          .from('medico_obras_sociales')
-          .insert({ medico_id: profile.id, obra_social_id: obraSocialId });
-          
-        setMisMutuales(prev => {
-          const next = new Set(prev);
+        } else {
           next.add(obraSocialId);
-          return next;
-        });
-      }
+        }
+        return next;
+      });
     } catch (error) {
       console.error('Error al actualizar mutual:', error);
-      alert('Hubo un error al guardar los cambios.');
+      alert('Hubo un error al guardar los cambios: ' + error.message);
     } finally {
       setSaving(null);
     }

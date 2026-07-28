@@ -120,7 +120,6 @@ export default function TurnosPage() {
       .from('obras_sociales')
       .select('*')
       .eq('activa', true)
-      .eq('domain', domain)
       .order('nombre');
     setObrasSociales(data || []);
   }
