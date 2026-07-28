@@ -29,6 +29,10 @@ export default function HistoriaClinicaPage() {
   });
   const [archivos, setArchivos] = useState([]);
   const [uploading, setUploading] = useState(false);
+  
+  // Estados para filtro y acordeón
+  const [filtroFecha, setFiltroFecha] = useState('');
+  const [expandedEvo, setExpandedEvo] = useState(null);
 
   const supabase = createClient();
 
@@ -182,6 +186,12 @@ export default function HistoriaClinicaPage() {
     ? Math.floor((new Date() - new Date(paciente.fecha_nacimiento)) / 31557600000)
     : null;
 
+  const evolucionesFiltradas = evoluciones.filter(evo => {
+    if (!filtroFecha) return true;
+    const evoDate = new Date(evo.created_at).toISOString().split('T')[0]; // "YYYY-MM-DD"
+    return evoDate === filtroFecha;
+  });
+
   return (
     <div style={{ animation: 'fadeIn 0.4s ease' }}>
       {/* Header con datos del paciente */}
@@ -262,32 +272,49 @@ export default function HistoriaClinicaPage() {
         {/* Evoluciones - Main */}
         <div className="lg:col-span-2">
           <div className="glass-card p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
               <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                Evoluciones ({evoluciones.length})
+                Evoluciones ({evolucionesFiltradas.length})
               </h2>
-              <button onClick={() => setShowNuevaEvolucion(true)} className="btn-primary text-sm px-3 py-1.5">
-                + Nueva Evolución
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <input 
+                  type="date" 
+                  className="input-field text-sm px-3 py-1.5 h-auto w-auto" 
+                  value={filtroFecha}
+                  onChange={e => setFiltroFecha(e.target.value)}
+                  title="Filtrar por fecha"
+                />
+                {filtroFecha && (
+                  <button onClick={() => setFiltroFecha('')} className="btn-ghost text-xs">Limpiar</button>
+                )}
+                <button onClick={() => setShowNuevaEvolucion(true)} className="btn-primary text-sm px-3 py-1.5">
+                  + Nueva Evolución
+                </button>
+              </div>
             </div>
 
             {loading ? (
               <div className="loader"><div className="loader-spinner" /></div>
-            ) : evoluciones.length === 0 ? (
+            ) : evolucionesFiltradas.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-3xl mb-2">📋</div>
-                <p style={{ color: 'var(--text-secondary)' }}>Sin evoluciones registradas</p>
+                <p style={{ color: 'var(--text-secondary)' }}>Sin evoluciones registradas para esta fecha</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {evoluciones.map((evo) => (
+                {evolucionesFiltradas.map((evo) => (
                   <div
                     key={evo.id}
-                    className="p-4 rounded-xl"
+                    className="rounded-xl overflow-hidden transition-all"
                     style={{ background: 'var(--bg-input)', border: '1px solid var(--border-primary)' }}
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
+                    {/* Cabecera clickeable (Acordeón) */}
+                    <button
+                      className="w-full p-4 flex items-center justify-between text-left transition-colors"
+                      style={{ background: expandedEvo === evo.id ? 'rgba(0,0,0,0.03)' : 'transparent' }}
+                      onClick={() => setExpandedEvo(expandedEvo === evo.id ? null : evo.id)}
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-semibold" style={{ color: 'var(--accent-primary)' }}>
                           {new Date(evo.created_at).toLocaleDateString('es-AR')} a las {formatTime(new Date(evo.created_at).toLocaleTimeString('es-AR'))}
                         </span>
@@ -295,51 +322,59 @@ export default function HistoriaClinicaPage() {
                           — Dr/a. {evo.medico?.apellido} ({evo.medico?.especialidad})
                         </span>
                       </div>
-                    </div>
+                      <span className="text-xl font-bold ml-2" style={{ color: 'var(--text-muted)' }}>
+                        {expandedEvo === evo.id ? '−' : '+'}
+                      </span>
+                    </button>
 
-                    {evo.motivo_consulta && (
-                      <div className="mb-2">
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Motivo:</span>
-                        <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{evo.motivo_consulta}</p>
-                      </div>
-                    )}
-                    {evo.examen_fisico && (
-                      <div className="mb-2">
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Examen Físico:</span>
-                        <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{evo.examen_fisico}</p>
-                      </div>
-                    )}
-                    {evo.diagnostico && (
-                      <div className="mb-2">
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Diagnóstico:</span>
-                        <p className="text-sm font-medium" style={{ color: 'var(--warning)' }}>{evo.diagnostico}</p>
-                      </div>
-                    )}
-                    {evo.indicaciones && (
-                      <div className="mb-2">
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Indicaciones:</span>
-                        <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{evo.indicaciones}</p>
-                      </div>
-                    )}
+                    {/* Contenido Desplegable */}
+                    {expandedEvo === evo.id && (
+                      <div className="p-4 pt-0" style={{ borderTop: '1px dashed var(--border-primary)', marginTop: '8px', paddingTop: '16px' }}>
+                        {evo.motivo_consulta && (
+                          <div className="mb-3">
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Motivo de Consulta:</span>
+                            <p className="text-sm mt-1" style={{ color: 'var(--text-primary)' }}>{evo.motivo_consulta}</p>
+                          </div>
+                        )}
+                        {evo.examen_fisico && (
+                          <div className="mb-3">
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Examen Físico:</span>
+                            <p className="text-sm mt-1" style={{ color: 'var(--text-primary)' }}>{evo.examen_fisico}</p>
+                          </div>
+                        )}
+                        {evo.diagnostico && (
+                          <div className="mb-3 p-3 rounded-lg" style={{ background: 'rgba(234, 179, 8, 0.1)' }}>
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#ca8a04' }}>Diagnóstico:</span>
+                            <p className="text-sm mt-1 font-medium" style={{ color: '#ca8a04' }}>{evo.diagnostico}</p>
+                          </div>
+                        )}
+                        {evo.indicaciones && (
+                          <div className="mb-3">
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Indicaciones / Tratamiento:</span>
+                            <p className="text-sm mt-1" style={{ color: 'var(--text-primary)' }}>{evo.indicaciones}</p>
+                          </div>
+                        )}
 
-                    {/* Adjuntos */}
-                    {evo.adjuntos && evo.adjuntos.length > 0 && (
-                      <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border-primary)' }}>
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>📎 Adjuntos:</span>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {evo.adjuntos.map((adj) => (
-                            <a
-                              key={adj.id}
-                              href={adj.url_storage}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/40"
-                              style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-primary)', textDecoration: 'none' }}
-                            >
-                              {getFileIcon(adj.tipo)} <span className="truncate max-w-[150px]">{adj.nombre_archivo}</span>
-                            </a>
-                          ))}
-                        </div>
+                        {/* Adjuntos */}
+                        {evo.adjuntos && evo.adjuntos.length > 0 && (
+                          <div className="mt-4 pt-3" style={{ borderTop: '1px solid var(--border-primary)' }}>
+                            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>📎 Archivos Adjuntos:</span>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {evo.adjuntos.map((adj) => (
+                                <a
+                                  key={adj.id}
+                                  href={adj.url_storage}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg transition-colors hover:scale-105"
+                                  style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-primary)', textDecoration: 'none' }}
+                                >
+                                  {getFileIcon(adj.tipo)} <span className="truncate max-w-[200px] font-medium">{adj.nombre_archivo}</span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
