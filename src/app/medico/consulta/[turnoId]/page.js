@@ -64,7 +64,6 @@ export default function ConsultaPage() {
           const { data: { publicUrl } } = supabase.storage.from('adjuntos').getPublicUrl(filePath);
           await supabase.from('adjuntos').insert({
             evolucion_id: evo.id,
-            medico_id: profile.id,
             nombre_archivo: file.name,
             tipo: file.type.includes('pdf') ? 'pdf' : 'imagen',
             url_storage: publicUrl,

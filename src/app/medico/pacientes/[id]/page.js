@@ -139,7 +139,6 @@ export default function HistoriaClinicaPage() {
           
           const { error: adjError } = await supabase.from('adjuntos').insert({
             evolucion_id: nuevaEvo.id,
-            medico_id: profile.id,
             nombre_archivo: file.name,
             tipo: tipo,
             url_storage: publicUrl
