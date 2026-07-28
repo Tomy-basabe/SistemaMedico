@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { formatTime } from '@/lib/utils';
 
 export default function HistoriaClinicaPage() {
   const { id } = useParams();
