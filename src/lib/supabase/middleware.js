@@ -26,26 +26,33 @@ export async function updateSession(request) {
   );
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+    data: { session },
+  } = await supabase.auth.getSession();
+  
+  const user = session?.user;
   const pathname = request.nextUrl.pathname;
 
   // Rutas públicas
   if (pathname === '/login' || pathname === '/') {
     if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('rol')
-        .eq('id', user.id)
-        .single();
+      // Intentar leer el rol de los metadatos para evitar query a BD
+      let role = user.user_metadata?.rol;
+      
+      if (!role) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('rol')
+          .eq('id', user.id)
+          .single();
+        role = profile?.rol;
+      }
 
-      if (profile) {
-        const redirectUrl = profile.rol === 'superadmin' 
+      if (role) {
+        const redirectUrl = role === 'superadmin' 
           ? '/superadmin' 
-          : profile.rol === 'admin'
+          : role === 'admin'
           ? '/admin'
-          : profile.rol === 'medico'
+          : role === 'medico'
           ? '/medico'
           : '/secretaria';
         return NextResponse.redirect(new URL(redirectUrl, request.url));
@@ -60,19 +67,25 @@ export async function updateSession(request) {
   }
 
   // RBAC: Verificar rol vs ruta
-  if (pathname.startsWith('/secretaria') || pathname.startsWith('/medico') || pathname.startsWith('/admin')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('rol')
-      .eq('id', user.id)
-      .single();
+  if (pathname.startsWith('/secretaria') || pathname.startsWith('/medico') || pathname.startsWith('/admin') || pathname.startsWith('/superadmin')) {
+    
+    let role = user.user_metadata?.rol;
+      
+    if (!role) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('rol')
+        .eq('id', user.id)
+        .single();
+      role = profile?.rol;
+    }
 
-    if (!profile) {
+    if (!role) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
     // Superadmin tiene acceso a /superadmin y potencialmente a otras rutas si se requiere, pero por ahora su sección es /superadmin
-    if (profile.rol === 'superadmin') {
+    if (role === 'superadmin') {
       if (!pathname.startsWith('/superadmin')) {
         return NextResponse.redirect(new URL('/superadmin', request.url));
       }
@@ -80,7 +93,7 @@ export async function updateSession(request) {
     }
 
     // Admin tiene acceso a TODO excepto superadmin
-    if (profile.rol === 'admin') {
+    if (role === 'admin') {
       if (pathname.startsWith('/superadmin')) {
         return NextResponse.redirect(new URL('/admin', request.url));
       }
@@ -94,8 +107,8 @@ export async function updateSession(request) {
       ? 'medico'
       : 'admin';
 
-    if (profile.rol !== requiredRole) {
-      const redirectUrl = profile.rol === 'medico' ? '/medico' : (profile.rol === 'secretaria' ? '/secretaria' : '/admin');
+    if (role !== requiredRole) {
+      const redirectUrl = role === 'medico' ? '/medico' : (role === 'secretaria' ? '/secretaria' : '/admin');
       return NextResponse.redirect(new URL(redirectUrl, request.url));
     }
   }
