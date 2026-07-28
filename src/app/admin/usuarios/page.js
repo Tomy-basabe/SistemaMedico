@@ -22,6 +22,16 @@ export default function UsuariosPage() {
 
   useEffect(() => {
     fetchData();
+
+    const channel = supabase.channel('realtime:profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function fetchData() {

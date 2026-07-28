@@ -15,26 +15,64 @@ export default function PacientesPage() {
   });
   const supabase = createClient();
 
+  const [domain, setDomain] = useState('');
+
   useEffect(() => {
-    fetchPacientes();
-    fetchObrasSociales();
+    async function initDomain() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.email) {
+        const d = '@' + user.email.split('@')[1];
+        setDomain(d);
+        fetchPacientes(d);
+        fetchObrasSociales(d);
+      }
+    }
+    initDomain();
+
+    const channel = supabase.channel('realtime:pacientes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, () => {
+        // Usa el estado anterior o confía en que domain ya está listo,
+        // pero mejor dejar que el useEffect lo maneje si domain cambia.
+        // Dado que domain no cambia, podemos omitir dependencias si pasamos domain actual.
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  async function fetchPacientes() {
+  // Volver a subscribirse si domain cambia (hack simple para realtime)
+  useEffect(() => {
+    if (!domain) return;
+    const channel = supabase.channel('realtime:pacientes_domain')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pacientes' }, () => {
+        fetchPacientes(domain);
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [domain]);
+
+
+  async function fetchPacientes(currentDomain) {
+    if (!currentDomain) return;
     setLoading(true);
     const { data } = await supabase
       .from('pacientes')
       .select('*, obra_social:obras_sociales(*)')
+      .eq('domain', currentDomain)
       .order('apellido');
     setPacientes(data || []);
     setLoading(false);
   }
 
-  async function fetchObrasSociales() {
+  async function fetchObrasSociales(currentDomain) {
+    if (!currentDomain) return;
     const { data } = await supabase
       .from('obras_sociales')
       .select('*')
       .eq('activa', true)
+      .eq('domain', currentDomain)
       .order('nombre');
     setObrasSociales(data || []);
   }
@@ -53,11 +91,12 @@ export default function PacientesPage() {
         obra_social_id: form.obra_social_id || null,
         numero_afiliado: form.obra_social_id ? form.numero_afiliado : null,
         fecha_nacimiento: form.fecha_nacimiento || null,
+        domain: domain,
       });
       if (error) throw error;
       setShowModal(false);
       setForm({ dni: '', nombre: '', apellido: '', fecha_nacimiento: '', telefono: '', email: '', obra_social_id: '', numero_afiliado: '' });
-      fetchPacientes();
+      fetchPacientes(domain);
     } catch (error) {
       alert('Error: ' + error.message);
     }

@@ -19,6 +19,16 @@ export default function SuperAdminPage() {
 
   useEffect(() => {
     fetchAdmins();
+
+    const channel = supabase.channel('realtime:superadmin:profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchAdmins();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function fetchAdmins() {

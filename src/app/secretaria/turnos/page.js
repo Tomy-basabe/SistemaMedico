@@ -31,16 +31,33 @@ export default function TurnosPage() {
   const [searchingDni, setSearchingDni] = useState(false);
   const supabase = createClient();
 
+  const [domain, setDomain] = useState('');
+
   useEffect(() => {
-    fetchEspecialidades();
+    async function initDomain() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.email) {
+        const d = '@' + user.email.split('@')[1];
+        setDomain(d);
+        fetchEspecialidades(d);
+      }
+    }
+    initDomain();
   }, []);
 
-  async function fetchEspecialidades() {
-    const { data } = await supabase.from('especialidades').select('*').eq('activa', true).order('nombre');
+  async function fetchEspecialidades(currentDomain) {
+    if (!currentDomain) return;
+    const { data } = await supabase
+      .from('especialidades')
+      .select('*')
+      .eq('activa', true)
+      .eq('domain', currentDomain)
+      .order('nombre');
     setEspecialidades(data || []);
   }
 
   useEffect(() => {
+    if (!domain) return;
     fetchTurnos();
     fetchMedicos();
     fetchObrasSociales();
@@ -48,7 +65,6 @@ export default function TurnosPage() {
     // Supabase Realtime Subscription
     const channel = supabase.channel('realtime:turnos')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'turnos' }, (payload) => {
-        // Al ocurrir un cambio, refetch de los turnos para tener datos frescos
         fetchTurnos();
       })
       .subscribe();
@@ -56,7 +72,7 @@ export default function TurnosPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedDate, filterEspecialidad, filterEstado]);
+  }, [selectedDate, filterEspecialidad, filterEstado, domain]);
 
   async function fetchTurnos() {
     setLoading(true);
@@ -73,6 +89,12 @@ export default function TurnosPage() {
       if (error) throw error;
 
       let filtered = data || [];
+      // Turnos filtrados por el medico_id que ya pertenecen al dominio,
+      // pero por si acaso, podemos filtrar que el medico pertenezca al dominio.
+      if (domain) {
+        filtered = filtered.filter(t => t.medico?.email?.endsWith(domain));
+      }
+      
       if (filterEspecialidad) {
         filtered = filtered.filter((t) => t.medico?.especialidad === filterEspecialidad);
       }
@@ -85,12 +107,6 @@ export default function TurnosPage() {
   }
 
   async function fetchMedicos() {
-    const { data: { user } } = await supabase.auth.getUser();
-    let domain = '';
-    if (user && user.email) {
-      domain = '@' + user.email.split('@')[1];
-    }
-
     let query = supabase.from('profiles').select('*').eq('rol', 'medico');
     if (domain) {
       query = query.ilike('email', `%${domain}`);
@@ -104,6 +120,7 @@ export default function TurnosPage() {
       .from('obras_sociales')
       .select('*')
       .eq('activa', true)
+      .eq('domain', domain)
       .order('nombre');
     setObrasSociales(data || []);
   }
@@ -118,6 +135,7 @@ export default function TurnosPage() {
       .from('pacientes')
       .select('*')
       .ilike('dni', `%${dni}%`)
+      .eq('domain', domain)
       .limit(5);
 
     setMatchingPacientes(data || []);
