@@ -23,7 +23,7 @@ export default function TurnosPage() {
   const [diasDisponiblesFiltrados, setDiasDisponiblesFiltrados] = useState([]);
 
   const [form, setForm] = useState({
-    dni: '', nombre: '', apellido: '', telefono: '', email: '',
+    dni: '', nombre: '', apellido: '', telefono: '', email: '', fecha_nacimiento: '',
     obra_social_id: '', numero_afiliado: '', medico_id: '', fecha: '', hora: '', notas: '',
   });
   const [pacienteExistente, setPacienteExistente] = useState(null);
@@ -39,7 +39,7 @@ export default function TurnosPage() {
       if (user && user.email) {
         const d = '@' + user.email.split('@')[1];
         setDomain(d);
-        fetchEspecialidades(d);
+        fetchEspecialidades();
       }
     }
     initDomain();
@@ -148,6 +148,7 @@ export default function TurnosPage() {
       apellido: paciente.apellido,
       telefono: paciente.telefono || '',
       email: paciente.email || '',
+      fecha_nacimiento: paciente.fecha_nacimiento || '',
       obra_social_id: paciente.obra_social_id || '',
       numero_afiliado: paciente.numero_afiliado || '',
     }));
@@ -308,8 +309,10 @@ export default function TurnosPage() {
             apellido: form.apellido,
             telefono: form.telefono || null,
             email: form.email || null,
+            fecha_nacimiento: form.fecha_nacimiento || null,
             obra_social_id: form.obra_social_id || null,
             numero_afiliado: form.obra_social_id ? form.numero_afiliado : null,
+            domain: domain,
           })
           .select()
           .single();
@@ -317,12 +320,13 @@ export default function TurnosPage() {
         if (pacienteError) throw pacienteError;
         pacienteId = nuevoPaciente.id;
       } else {
-        // Actualizar el paciente si la secretaria modificó la obra social o teléfono
+        // Actualizar el paciente si la secretaria modificó sus datos
         const { error: pacienteUpdateError } = await supabase
           .from('pacientes')
           .update({
             telefono: form.telefono || null,
             email: form.email || null,
+            fecha_nacimiento: form.fecha_nacimiento || null,
             obra_social_id: form.obra_social_id || null,
             numero_afiliado: form.obra_social_id ? form.numero_afiliado : null,
           })
@@ -588,26 +592,36 @@ export default function TurnosPage() {
                 )}
               </div>
 
-              {/* Datos paciente */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="input-label">Nombre</label>
+                  <label className="input-label">Nombre *</label>
                   <input type="text" className="input-field" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required disabled={!!pacienteExistente} />
                 </div>
                 <div>
-                  <label className="input-label">Apellido</label>
+                  <label className="input-label">Apellido *</label>
                   <input type="text" className="input-field" value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} required disabled={!!pacienteExistente} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className="input-label">Fecha de Nacimiento</label>
+                  <input type="date" className="input-field" value={form.fecha_nacimiento} onChange={(e) => setForm({ ...form, fecha_nacimiento: e.target.value })} disabled={!!pacienteExistente} />
+                </div>
+                <div>
                   <label className="input-label">Teléfono (con cód. país)</label>
-                  <input type="text" className="input-field" placeholder="5492614001234" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} disabled={!!pacienteExistente} />
+                  <input type="text" className="input-field" placeholder="Ej: 5492614001234" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="input-label">Email (opcional)</label>
+                  <input type="email" className="input-field" placeholder="ejemplo@gmail.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                 </div>
                 <div>
                   <label className="input-label">Obra Social</label>
-                  <select className="select-field" value={form.obra_social_id} onChange={(e) => setForm({ ...form, obra_social_id: e.target.value })} disabled={!!pacienteExistente}>
+                  <select className="select-field" value={form.obra_social_id} onChange={(e) => setForm({ ...form, obra_social_id: e.target.value })}>
                     <option value="">Seleccionar...</option>
                     {obrasSociales.map((os) => (
                       <option key={os.id} value={os.id}>{os.nombre}</option>
@@ -625,7 +639,7 @@ export default function TurnosPage() {
                     value={form.numero_afiliado} 
                     onChange={(e) => setForm({ ...form, numero_afiliado: e.target.value })} 
                     required={!!form.obra_social_id}
-                    disabled={!!pacienteExistente || !form.obra_social_id}
+                    disabled={!form.obra_social_id}
                     placeholder={form.obra_social_id ? "Número de afiliado..." : "Solo para obra social"}
                   />
                 </div>
