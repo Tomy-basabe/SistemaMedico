@@ -44,6 +44,18 @@ export default function TurnosPage() {
     fetchTurnos();
     fetchMedicos();
     fetchObrasSociales();
+
+    // Supabase Realtime Subscription
+    const channel = supabase.channel('realtime:turnos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'turnos' }, (payload) => {
+        // Al ocurrir un cambio, refetch de los turnos para tener datos frescos
+        fetchTurnos();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedDate, filterEspecialidad, filterEstado]);
 
   async function fetchTurnos() {
@@ -73,11 +85,17 @@ export default function TurnosPage() {
   }
 
   async function fetchMedicos() {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('rol', 'medico')
-      .order('apellido');
+    const { data: { user } } = await supabase.auth.getUser();
+    let domain = '';
+    if (user && user.email) {
+      domain = '@' + user.email.split('@')[1];
+    }
+
+    let query = supabase.from('profiles').select('*').eq('rol', 'medico');
+    if (domain) {
+      query = query.ilike('email', `%${domain}`);
+    }
+    const { data } = await query.order('apellido');
     setMedicos(data || []);
   }
 
@@ -283,9 +301,24 @@ export default function TurnosPage() {
 
         if (pacienteError) throw pacienteError;
         pacienteId = nuevoPaciente.id;
+      } else {
+        // Actualizar el paciente si la secretaria modificó la obra social o teléfono
+        const { error: pacienteUpdateError } = await supabase
+          .from('pacientes')
+          .update({
+            telefono: form.telefono || null,
+            email: form.email || null,
+            obra_social_id: form.obra_social_id || null,
+            numero_afiliado: form.obra_social_id ? form.numero_afiliado : null,
+          })
+          .eq('id', pacienteId);
+        
+        if (pacienteUpdateError) throw pacienteUpdateError;
       }
 
-      if (!form.fecha || !form.hora) throw new Error('Debe seleccionar una fecha y hora');
+      if (!form.fecha || !form.hora || !form.medico_id) {
+        throw new Error('Debe seleccionar una fecha y un horario (clic en el cuadro con la hora).');
+      }
 
       const { error: turnoError } = await supabase.from('turnos').insert({
         paciente_id: pacienteId,
