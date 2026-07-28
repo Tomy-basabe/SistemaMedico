@@ -126,7 +126,7 @@ export default function LoginPage() {
             />
           </div>
           <h1 className="text-3xl font-bold mb-1">
-            <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#f97316' }}>Hard</span>
+            <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#059669' }}>Hard</span>
           </h1>
           <p className="text-xs font-semibold tracking-widest mt-2" style={{ color: '#94a3b8', lineHeight: '1.4' }}>
             INGENIERÍA DE SISTEMAS &<br />ARQUITECTURA DE SOFTWARE

@@ -91,7 +91,7 @@ export default function Sidebar({ links, role }) {
           />
           <div className="flex flex-col">
             <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-              <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#f97316' }}>Hard</span>
+              <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#059669' }}>Hard</span>
             </span>
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function Sidebar({ links, role }) {
           />
             <div>
               <h2 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
-                <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#f97316' }}>Hard</span>
+                <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#059669' }}>Hard</span>
               </h2>
               <span
                 className="text-xs font-medium px-2 py-0.5 rounded-full"
