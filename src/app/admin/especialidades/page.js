@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { IconPlus, IconX } from '@/components/ui/Icons';
 
+import { createEspecialidadServer, toggleEspecialidadServer } from '@/app/actions/especialidades';
+
 export default function EspecialidadesPage() {
   const [especialidades, setEspecialidades] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,13 +38,9 @@ export default function EspecialidadesPage() {
     setSuccess('');
 
     try {
-      const { error: err } = await supabase
-        .from('especialidades')
-        .insert([{ nombre: form.nombre, activa: form.activa }]);
-
-      if (err) {
-        if (err.code === '23505') throw new Error('Ya existe una especialidad con este nombre');
-        throw err;
+      const response = await createEspecialidadServer({ nombre: form.nombre, activa: form.activa });
+      if (!response.success) {
+        throw new Error(response.error);
       }
 
       setSuccess(`Especialidad ${form.nombre} agregada`);
@@ -57,7 +55,11 @@ export default function EspecialidadesPage() {
   }
 
   async function toggleActiva(id, activa) {
-    await supabase.from('especialidades').update({ activa }).eq('id', id);
+    setError('');
+    const response = await toggleEspecialidadServer(id, activa);
+    if (!response.success) {
+      setError(response.error);
+    }
     fetchEspecialidades();
   }
 
