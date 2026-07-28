@@ -17,27 +17,15 @@ export default function EspecialidadesPage() {
   
   const supabase = createClient();
 
-  const [domain, setDomain] = useState('');
-
   useEffect(() => {
-    async function initDomain() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.email) {
-        const d = '@' + user.email.split('@')[1];
-        setDomain(d);
-        fetchEspecialidades(d);
-      }
-    }
-    initDomain();
+    fetchEspecialidades();
   }, []);
 
-  async function fetchEspecialidades(currentDomain) {
-    if (!currentDomain) return;
+  async function fetchEspecialidades() {
     setLoading(true);
     const { data } = await supabase
       .from('especialidades')
       .select('*')
-      .eq('domain', currentDomain)
       .order('nombre');
     setEspecialidades(data || []);
     setLoading(false);
@@ -50,7 +38,7 @@ export default function EspecialidadesPage() {
     setSuccess('');
 
     try {
-      const response = await createEspecialidadServer({ nombre: form.nombre, activa: form.activa, domain: domain });
+      const response = await createEspecialidadServer({ nombre: form.nombre, activa: form.activa });
       if (!response.success) {
         throw new Error(response.error);
       }
@@ -58,7 +46,7 @@ export default function EspecialidadesPage() {
       setSuccess(`Especialidad ${form.nombre} agregada`);
       setShowModal(false);
       setForm({ nombre: '', activa: true });
-      fetchEspecialidades(domain);
+      fetchEspecialidades();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -72,7 +60,7 @@ export default function EspecialidadesPage() {
     if (!response.success) {
       setError(response.error);
     }
-    fetchEspecialidades(domain);
+    fetchEspecialidades();
   }
 
   return (

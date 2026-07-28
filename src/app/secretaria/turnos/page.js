@@ -45,13 +45,11 @@ export default function TurnosPage() {
     initDomain();
   }, []);
 
-  async function fetchEspecialidades(currentDomain) {
-    if (!currentDomain) return;
+  async function fetchEspecialidades() {
     const { data } = await supabase
       .from('especialidades')
       .select('*')
       .eq('activa', true)
-      .eq('domain', currentDomain)
       .order('nombre');
     setEspecialidades(data || []);
   }
