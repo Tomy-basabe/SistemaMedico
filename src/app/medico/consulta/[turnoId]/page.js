@@ -134,7 +134,7 @@ export default function ConsultaPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto hide-scrollbar pb-2">
         {[
           { key: 'evolucion', label: '📝 Evolución' },
           { key: 'receta', label: '📋 Receta / Orden' },
@@ -236,7 +236,7 @@ export default function ConsultaPage() {
             >
               <div className="text-3xl mb-2">📤</div>
               <p className="font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Arrastrá archivos o hacé clic para seleccionar
+                Tocá aquí para subir archivos, o arrastralos
               </p>
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>PDF, JPG, PNG</p>
               <input
@@ -263,8 +263,8 @@ export default function ConsultaPage() {
       </div>
 
       {/* Footer actions */}
-      <div className="flex justify-between items-center mt-6">
-        <button onClick={() => router.push('/medico')} className="btn-secondary">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+        <button onClick={() => router.push('/medico')} className="btn-secondary w-full sm:w-auto">
           ← Volver al Dashboard
         </button>
         <button onClick={guardarConsulta} className="btn-primary" disabled={saving}>

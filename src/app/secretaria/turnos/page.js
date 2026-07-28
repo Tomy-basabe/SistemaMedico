@@ -606,7 +606,7 @@ export default function TurnosPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="input-label">Nombre *</label>
                   <input type="text" className="input-field" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required disabled={!!pacienteExistente} />
@@ -617,7 +617,7 @@ export default function TurnosPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="input-label">Fecha de Nacimiento</label>
                   <input type="date" className="input-field" value={form.fecha_nacimiento} onChange={(e) => setForm({ ...form, fecha_nacimiento: e.target.value })} disabled={!!pacienteExistente} />
@@ -628,7 +628,7 @@ export default function TurnosPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="input-label">Email (opcional)</label>
                   <input type="email" className="input-field" placeholder="ejemplo@gmail.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
@@ -644,7 +644,7 @@ export default function TurnosPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="input-label">Nº Afiliado {form.obra_social_id && '*'}</label>
                   <input 
@@ -739,13 +739,13 @@ export default function TurnosPage() {
                         )}
                       </label>
 
-                      <div className="flex gap-3 overflow-x-auto pb-3" style={{ scrollbarWidth: 'thin' }}>
+                      <div className="flex gap-3 overflow-x-auto pb-3 snap-x-mandatory hide-scrollbar">
                         {diasDisponiblesFiltrados.map(dia => {
                           const isSelectedDay = form.fecha === dia.dateStr;
                           return (
                             <div
                               key={dia.dateStr}
-                              className="flex-shrink-0 w-44 rounded-xl overflow-hidden transition-all"
+                              className="flex-shrink-0 w-44 rounded-xl overflow-hidden transition-all snap-start"
                               style={{
                                 border: isSelectedDay ? '2px solid var(--accent-primary)' : '1px solid var(--border-primary)',
                                 boxShadow: isSelectedDay ? '0 0 0 2px rgba(5,150,105,0.15)' : 'none',
