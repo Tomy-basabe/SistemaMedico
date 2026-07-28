@@ -41,7 +41,9 @@ export async function updateSession(request) {
         .single();
 
       if (profile) {
-        const redirectUrl = profile.rol === 'admin'
+        const redirectUrl = profile.rol === 'superadmin' 
+          ? '/superadmin' 
+          : profile.rol === 'admin'
           ? '/admin'
           : profile.rol === 'medico'
           ? '/medico'
@@ -69,8 +71,19 @@ export async function updateSession(request) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Admin tiene acceso a TODO
+    // Superadmin tiene acceso a /superadmin y potencialmente a otras rutas si se requiere, pero por ahora su sección es /superadmin
+    if (profile.rol === 'superadmin') {
+      if (!pathname.startsWith('/superadmin')) {
+        return NextResponse.redirect(new URL('/superadmin', request.url));
+      }
+      return supabaseResponse;
+    }
+
+    // Admin tiene acceso a TODO excepto superadmin
     if (profile.rol === 'admin') {
+      if (pathname.startsWith('/superadmin')) {
+        return NextResponse.redirect(new URL('/admin', request.url));
+      }
       return supabaseResponse;
     }
 
@@ -82,7 +95,7 @@ export async function updateSession(request) {
       : 'admin';
 
     if (profile.rol !== requiredRole) {
-      const redirectUrl = profile.rol === 'medico' ? '/medico' : '/secretaria';
+      const redirectUrl = profile.rol === 'medico' ? '/medico' : (profile.rol === 'secretaria' ? '/secretaria' : '/admin');
       return NextResponse.redirect(new URL(redirectUrl, request.url));
     }
   }

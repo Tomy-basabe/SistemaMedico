@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { IconPlus, IconUser, IconX } from '@/components/ui/Icons';
+import { createUserServer } from '@/app/actions/users';
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState([]);
@@ -12,8 +13,9 @@ export default function UsuariosPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [adminDomain, setAdminDomain] = useState('');
   const [form, setForm] = useState({
-    email: '', password: '', nombre: '', apellido: '',
+    username: '', password: '', nombre: '', apellido: '',
     rol: 'secretaria', especialidad: '', matricula: '',
   });
   const supabase = createClient();
@@ -24,10 +26,23 @@ export default function UsuariosPage() {
 
   async function fetchData() {
     setLoading(true);
+    
+    // Obtener el dominio del admin actual
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && user.email) {
+      const parts = user.email.split('@');
+      if (parts.length === 2) {
+        setAdminDomain('@' + parts[1]);
+      }
+    }
+
     const [usuariosRes, especialidadesRes] = await Promise.all([
       supabase.from('profiles').select('*').order('rol').order('apellido'),
       supabase.from('especialidades').select('*').eq('activa', true).order('nombre')
     ]);
+    
+    // Solo mostrar usuarios del mismo dominio (opcional, pero buena idea) o todos. 
+    // Por simplicidad mostramos los obtenidos.
     setUsuarios(usuariosRes.data || []);
     setEspecialidades(especialidadesRes.data || []);
     setLoading(false);
@@ -45,26 +60,25 @@ export default function UsuariosPage() {
     setSuccess('');
 
     try {
-      // Crear usuario via Supabase Auth
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: form.email,
+      const fullEmail = `${form.username}${adminDomain}`;
+      
+      const response = await createUserServer({
+        email: fullEmail,
         password: form.password,
-        options: {
-          data: {
-            nombre: form.nombre,
-            apellido: form.apellido,
-            rol: form.rol,
-            especialidad: form.rol === 'medico' ? form.especialidad : null,
-            matricula: form.rol === 'medico' ? form.matricula : null,
-          },
-        },
+        nombre: form.nombre,
+        apellido: form.apellido,
+        rol: form.rol,
+        especialidad: form.especialidad,
+        matricula: form.matricula
       });
 
-      if (authError) throw authError;
+      if (!response.success) {
+        throw new Error(response.error);
+      }
 
-      setSuccess(`Usuario ${form.email} creado exitosamente`);
+      setSuccess(`Usuario ${fullEmail} creado exitosamente`);
       setShowModal(false);
-      setForm({ email: '', password: '', nombre: '', apellido: '', rol: 'secretaria', especialidad: '', matricula: '' });
+      setForm({ username: '', password: '', nombre: '', apellido: '', rol: 'secretaria', especialidad: '', matricula: '' });
       setTimeout(() => fetchUsuarios(), 1000);
     } catch (err) {
       setError(err.message);
@@ -166,7 +180,13 @@ export default function UsuariosPage() {
               </div>
               <div>
                 <label className="input-label">Email</label>
-                <input type="email" className="input-field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+                <div className="flex items-center gap-2">
+                  <input type="text" className="input-field flex-1" placeholder="usuario" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
+                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-600 font-medium whitespace-nowrap dark:bg-gray-800 dark:text-gray-400">
+                    {adminDomain}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Los usuarios creados deben pertenecer a su misma organización ({adminDomain}).</p>
               </div>
               <div>
                 <label className="input-label">Contraseña</label>
@@ -177,7 +197,7 @@ export default function UsuariosPage() {
                 <select className="select-field" value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })}>
                   <option value="secretaria">Secretaria</option>
                   <option value="medico">Médico</option>
-                  <option value="admin">Administrador</option>
+                  {/* Removida la opción de Admin, solo el SuperAdmin crea Admins */}
                 </select>
               </div>
               {form.rol === 'medico' && (
