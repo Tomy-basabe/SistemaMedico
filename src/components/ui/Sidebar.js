@@ -85,13 +85,15 @@ export default function Sidebar({ links, role }) {
         </button>
         <div className="flex items-center gap-2">
           <img
-            src="/logo.png"
-            alt="CAB Laboratorio"
+            src="/logo-stackhard.png"
+            alt="StackHard Logo"
             className="h-8 w-auto object-contain bg-white rounded-md p-1"
           />
-          <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-            CAB
-          </span>
+          <div className="flex flex-col">
+            <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+              <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#f97316' }}>Hard</span>
+            </span>
+          </div>
         </div>
         <span
           className="text-xs font-medium px-2 py-1 rounded-full"
@@ -132,13 +134,13 @@ export default function Sidebar({ links, role }) {
         <div className="p-6 pb-4">
           <div className="flex items-center gap-3 mb-1">
           <img
-            src="/logo.png"
-            alt="CAB Laboratorio"
+            src="/logo-stackhard.png"
+            alt="StackHard Logo"
             className="h-10 w-auto object-contain bg-white rounded-lg p-1 shadow-sm"
           />
             <div>
               <h2 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
-                CAB
+                <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#f97316' }}>Hard</span>
               </h2>
               <span
                 className="text-xs font-medium px-2 py-0.5 rounded-full"
@@ -151,6 +153,9 @@ export default function Sidebar({ links, role }) {
               </span>
             </div>
           </div>
+          <p className="text-[0.6rem] font-semibold tracking-wider mt-2 uppercase" style={{ color: 'var(--text-muted)' }}>
+            INGENIERÍA DE SISTEMAS &<br />ARQUITECTURA DE SOFTWARE
+          </p>
         </div>
 
         {/* Divider */}

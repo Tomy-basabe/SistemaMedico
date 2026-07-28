@@ -120,13 +120,17 @@ export default function LoginPage() {
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
             <img
-              src="/logo.png"
-              alt="CAB Laboratorio de Análisis Clínicos"
+              src="/logo-stackhard.png"
+              alt="StackHard Logo"
               className="h-28 w-auto object-contain bg-white p-2 rounded-2xl shadow-sm"
             />
           </div>
-          <h1 className="text-2xl font-bold gradient-text mb-1">CAB</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Laboratorio de Análisis Clínicos</p>
+          <h1 className="text-3xl font-bold mb-1">
+            <span style={{ color: '#374151' }}>Stack</span><span style={{ color: '#f97316' }}>Hard</span>
+          </h1>
+          <p className="text-xs font-semibold tracking-widest mt-2" style={{ color: '#94a3b8', lineHeight: '1.4' }}>
+            INGENIERÍA DE SISTEMAS &<br />ARQUITECTURA DE SOFTWARE
+          </p>
         </div>
 
         {/* Card */}
@@ -344,7 +348,7 @@ export default function LoginPage() {
           className="text-center mt-6 text-xs"
           style={{ color: 'var(--text-muted)' }}
         >
-          © 2026 MediCenter — Sistema de Gestión Médica
+          © 2026 StackHard — Ingeniería de Sistemas
         </p>
       </div>
     </div>
