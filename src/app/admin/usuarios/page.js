@@ -29,10 +29,12 @@ export default function UsuariosPage() {
     
     // Obtener el dominio del admin actual
     const { data: { user } } = await supabase.auth.getUser();
+    let currentDomain = '';
     if (user && user.email) {
       const parts = user.email.split('@');
       if (parts.length === 2) {
-        setAdminDomain('@' + parts[1]);
+        currentDomain = '@' + parts[1];
+        setAdminDomain(currentDomain);
       }
     }
 
@@ -41,16 +43,23 @@ export default function UsuariosPage() {
       supabase.from('especialidades').select('*').eq('activa', true).order('nombre')
     ]);
     
-    // Solo mostrar usuarios del mismo dominio (opcional, pero buena idea) o todos. 
-    // Por simplicidad mostramos los obtenidos.
-    setUsuarios(usuariosRes.data || []);
+    let filteredUsuarios = usuariosRes.data || [];
+    if (currentDomain) {
+      filteredUsuarios = filteredUsuarios.filter(u => u.email && u.email.endsWith(currentDomain));
+    }
+
+    setUsuarios(filteredUsuarios);
     setEspecialidades(especialidadesRes.data || []);
     setLoading(false);
   }
 
   async function fetchUsuarios() {
     const { data } = await supabase.from('profiles').select('*').order('rol').order('apellido');
-    setUsuarios(data || []);
+    let filteredUsuarios = data || [];
+    if (adminDomain) {
+      filteredUsuarios = filteredUsuarios.filter(u => u.email && u.email.endsWith(adminDomain));
+    }
+    setUsuarios(filteredUsuarios);
   }
 
   async function handleCreateUser(e) {
