@@ -21,6 +21,7 @@ export default function TurnosPage() {
   const [medicosDeEspecialidad, setMedicosDeEspecialidad] = useState([]);
   const [diasDisponibles, setDiasDisponibles] = useState([]);
   const [diasDisponiblesFiltrados, setDiasDisponiblesFiltrados] = useState([]);
+  const [medicosMutuales, setMedicosMutuales] = useState({});
 
   const [form, setForm] = useState({
     dni: '', nombre: '', apellido: '', telefono: '', email: '', fecha_nacimiento: '',
@@ -178,6 +179,18 @@ export default function TurnosPage() {
       .select('*')
       .in('medico_id', medicosIds)
       .eq('activa', true);
+
+    const { data: mutualesAll } = await supabase
+      .from('medico_obras_sociales')
+      .select('medico_id, obra_social_id')
+      .in('medico_id', medicosIds);
+
+    const mutualesMap = {};
+    (mutualesAll || []).forEach(m => {
+      if (!mutualesMap[m.medico_id]) mutualesMap[m.medico_id] = [];
+      mutualesMap[m.medico_id].push(m.obra_social_id);
+    });
+    setMedicosMutuales(mutualesMap);
 
     if (!dispoAll || dispoAll.length === 0) return;
 
@@ -370,6 +383,7 @@ export default function TurnosPage() {
     setModalEspecialidad('');
     setModalMedicoId('');
     setMedicosDeEspecialidad([]);
+    setMedicosMutuales({});
   }
 
   async function updateEstado(turnoId, estado) {
@@ -759,19 +773,31 @@ export default function TurnosPage() {
 
                                   if (!medicoTarget) return null;
 
-                                  const isSelected = form.fecha === dia.dateStr && form.hora === slot.hora && form.medico_id === medicoTarget.medico_id;
+                                  // Verificar si AL MENOS UN médico disponible en este slot recibe la mutual
+                                  const algunMedicoRecibe = slot.medicos.some(m => !form.obra_social_id || (medicosMutuales[m.medico_id] && medicosMutuales[m.medico_id].includes(form.obra_social_id)));
+                                  const colorBg = algunMedicoRecibe ? 'rgba(16, 185, 129, 0.15)' : 'rgba(234, 179, 8, 0.2)'; // Verde suave o amarillo suave
+                                  const colorText = algunMedicoRecibe ? '#059669' : '#ca8a04';
+                                  const colorBorder = algunMedicoRecibe ? 'rgba(16, 185, 129, 0.4)' : 'rgba(234, 179, 8, 0.4)';
+
+                                  const isSelected = form.fecha === dia.dateStr && form.hora === slot.hora;
 
                                   return (
                                     <button
-                                      key={`${slot.hora}-${medicoTarget.medico_id}`}
+                                      key={`${slot.hora}`}
                                       type="button"
-                                      onClick={() => setForm(prev => ({ ...prev, fecha: dia.dateStr, hora: slot.hora, medico_id: medicoTarget.medico_id }))}
+                                      onClick={() => {
+                                        if (modalMedicoId || slot.medicos.length === 1) {
+                                          setForm(prev => ({ ...prev, fecha: dia.dateStr, hora: slot.hora, medico_id: medicoTarget.medico_id }));
+                                        } else {
+                                          setForm(prev => ({ ...prev, fecha: dia.dateStr, hora: slot.hora, medico_id: '' }));
+                                        }
+                                      }}
                                       className="text-xs py-1.5 rounded-lg font-mono font-semibold transition-all duration-150"
-                                      title={medicoTarget.medico_nombre}
+                                      title={algunMedicoRecibe ? "Horario disponible" : "Horario disponible (No recibe mutual seleccionada)"}
                                       style={{
-                                        background: isSelected ? 'var(--accent-primary)' : 'var(--bg-secondary)',
-                                        color: isSelected ? 'white' : 'var(--text-primary)',
-                                        border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-primary)'}`,
+                                        background: isSelected ? 'var(--accent-primary)' : colorBg,
+                                        color: isSelected ? 'white' : colorText,
+                                        border: `1px solid ${isSelected ? 'var(--accent-primary)' : colorBorder}`,
                                       }}
                                     >
                                       {slot.hora}
@@ -784,10 +810,41 @@ export default function TurnosPage() {
                         })}
                       </div>
 
+                      {/* Selección de médico si hay varios en el mismo horario */}
+                      {form.fecha && form.hora && !form.medico_id && !modalMedicoId && (
+                        <div className="mt-4 p-4 rounded-xl border" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--bg-secondary)' }}>
+                          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+                            Hay varios médicos disponibles a las {form.hora} hs. Seleccioná uno:
+                          </p>
+                          <div className="flex flex-col gap-2">
+                            {diasDisponibles.find(d => d.dateStr === form.fecha)?.slots.find(s => s.hora === form.hora)?.medicos.map(m => {
+                              const acepta = !form.obra_social_id || (medicosMutuales[m.medico_id] && medicosMutuales[m.medico_id].includes(form.obra_social_id));
+                              return (
+                                <button
+                                  key={m.medico_id}
+                                  type="button"
+                                  onClick={() => setForm(prev => ({ ...prev, medico_id: m.medico_id }))}
+                                  className="flex items-center justify-between p-3 rounded-lg border transition-all hover:border-emerald-500"
+                                  style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-card)' }}
+                                >
+                                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{m.medico_nombre}</span>
+                                  <span className="text-xs font-semibold px-2 py-1 rounded" style={{
+                                    background: acepta ? 'rgba(16, 185, 129, 0.1)' : 'rgba(234, 179, 8, 0.1)',
+                                    color: acepta ? '#059669' : '#ca8a04'
+                                  }}>
+                                    {acepta ? '✓ Recibe mutual' : '⚠ Particular'}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Leyenda de médicos si no hay filtro */}
-                      {!modalMedicoId && medicosDeEspecialidad.length > 1 && (
+                      {!modalMedicoId && medicosDeEspecialidad.length > 1 && !form.hora && (
                         <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-                          💡 El horario elegido se asignará al primer médico disponible. Para elegir uno específico, usá el filtro de médico arriba.
+                          💡 Verde: Recibe mutual seleccionada | Amarillo: Atención particular (no recibe mutual)
                         </p>
                       )}
                     </div>
